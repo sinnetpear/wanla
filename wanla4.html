@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Tracker Fiscal Year</title>
+    <!-- FullCalendar CSS & JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <style>
+        :root {
+            --bg-color: #0f1020;
+            --card-bg: #1a1c33;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #2e325a;
+            --vacation-color: #38bdf8; 
+            --sick-color: #c084fc;     
+            --business-color: #f472b6; 
+            --input-bg: #131529;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
+        h2, h3 { font-weight: 600; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .fiscal-selector {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .fiscal-selector select {
+            background: transparent;
+            color: var(--text-color);
+            border: none;
+            font-size: 15px;
+            outline: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+        .quota-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media(max-width: 768px) {
+            .quota-grid { grid-template-columns: 1fr; }
+        }
+        .quota-box {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+        }
+        .quota-box.vacation { border-left: 6px solid var(--vacation-color); }
+        .quota-box.sick { border-left: 6px solid var(--sick-color); }
+        .quota-box.business { border-left: 6px solid var(--business-color); }
+        .quota-box p { color: var(--text-muted); font-size: 13px; margin-bottom: 4px; }
+        .quota-box h3 { font-size: 20px; margin: 0; font-weight: 700; }
+        .quota-box span { font-size: 12px; color: var(--text-muted); }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media(max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr !important; }
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 14px; color: var(--text-muted); margin-bottom: 6px; }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-color);
+            font-size: 16px;
+            outline: none;
+        }
+        .btn {
+            background-color: #3b82f6;
+            color: #fff;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-primary { background: linear-gradient(135deg, #38bdf8, #c084fc, #f472b6); color: #0f1020; font-weight: 700; }
+
+        #calendar {
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 12px;
+            color: #fff;
+        }
+        .fc {
+            --fc-border-color: var(--border-color);
+            --fc-page-bg-color: transparent;
+            --fc-neutral-bg-color: transparent;
+            --fc-list-event-hover-bg-color: #25284a;
+            --fc-today-bg-color: rgba(56, 189, 248, 0.1);
+        }
+        .fc-toolbar-title { font-size: 16px !important; color: var(--text-color); }
+        .fc-button { background: #2e325a !important; border: none !important; font-size: 12px !important; }
+        .fc-button-active { background: #c084fc !important; }
+        .fc-event { cursor: pointer; padding: 2px 4px; font-size: 12px; }
+
+        .leave-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .leave-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--input-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .leave-info h4 { font-size: 15px; margin-bottom: 2px; }
+        .leave-info p { font-size: 12px; color: var(--text-muted); }
+        .badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .badge-vacation { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+        .badge-sick { background: rgba(192, 132, 252, 0.2); color: #c084fc; }
+        .badge-business { background: rgba(244, 114, 182, 0.2); color: #f472b6; }
+        .badge-note { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+        .delete-btn {
+            background: transparent;
+            color: #f87171;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>🌸 Leave & Note Fiscal Year</h2>
+        <div class="fiscal-selector">
+            <span style="font-size: 14px; color: var(--text-muted); margin-right: 8px;">รอบปีงบประมาณ:</span>
+            <select id="fiscalYearSelect" onchange="changeFiscalYear()">
+                <!-- JS เติมปีงบประมาณ -->
+            </select>
+        </div>
+    </div>
+
+    <!-- สรุปวันลา (เฉพาะพักผ่อนมีโควตา) -->
+    <div class="quota-grid">
+        <div class="quota-box vacation">
+            <p>🏖️ ลาพักผ่อน (โควตา)</p>
+            <h3 id="vacationRemaining">20 / 20</h3>
+            <span id="vacationUsed">ใช้ไป 0 วัน</span>
+        </div>
+        <div class="quota-box sick">
+            <p>🩺 ลาป่วย</p>
+            <h3 id="sickTotal">0 วัน</h3>
+            <span>สะสมในปีนี้</span>
+        </div>
+        <div class="quota-box business">
+            <p>📌 ลากิจ</p>
+            <h3 id="businessTotal">0 วัน</h3>
+            <span>สะสมในปีนี้</span>
+        </div>
+    </div>
+
+    <!-- ฟอร์มบันทึกการลา -->
+    <div class="card">
+        <h3 style="margin-bottom: 12px; font-size: 18px;">✍️ บันทึกวันลาใหม่</h3>
+        <form id="leaveForm" onsubmit="addLeave(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>ประเภทการลา</label>
+                    <select id="leaveType" class="form-control">
+                        <option value="vacation">🏖️ ลาพักผ่อน</option>
+                        <option value="sick">🩺 ลาป่วย</option>
+                        <option value="business">📌 ลากิจ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>หมายเหตุ / รายละเอียด (ไม่กรอกก็ได้)</label>
+                    <input type="text" id="leaveReason" class="form-control" placeholder="เช่น ไปเที่ยวทะเล, หาหมอ">
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>ตั้งแต่วันที่</label>
+                    <input type="date" id="startDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>ถึงวันที่</label>
+                    <input type="date" id="endDate" class="form-control" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">บันทึกวันลา</button>
+        </form>
+    </div>
+
+    <!-- ปฏิทินแสดงวันลาและโน้ต -->
+    <div class="card">
+        <h3 style="margin-bottom: 8px; font-size: 18px;">📅 ปฏิทิน (คลิกวันที่เพื่อเพิ่มโน้ต)</h3>
+        <div id="calendar"></div>
+    </div>
+
+    <!-- ประวัติการลาและโน้ต -->
+    <div class="card">
+        <h3 style="margin-bottom: 12px; font-size: 18px;">📋 ประวัติการลา & โน้ตทั้งหมดในปีนี้</h3>
+        <div class="leave-list" id="leaveList"></div>
+    </div>
+
+    <!-- Modal สำหรับเพิ่ม/แก้โน้ต -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalDateTitle" style="margin-bottom: 12px; font-size: 16px;">📝 เพิ่มโน้ตวันที่</h3>
+            <div class="form-group">
+                <input type="text" id="noteText" class="form-control" placeholder="พิมพ์ข้อความโน้ตที่นี่...">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" onclick="saveNote()">บันทึกโน้ต</button>
+                <button class="btn" style="background:#334155;" onclick="closeModal()">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const vacationQuota = 20;
+        let db = JSON.parse(localStorage.getItem('fiscal_leave_db')) || { leaves: [], notes: {} };
+        let currentFiscalYear = getFiscalYearKey(new Date());
+        let calendar = null;
+        let selectedDateForNote = null;
+
+        function getFiscalYearKey(dateObj) {
+            let year = dateObj.getFullYear();
+            let month = dateObj.getMonth() + 1;
+            if (month >= 10) {
+                return year + 1;
+            } else {
+                return year;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            generateFiscalOptions();
+            initCalendar();
+            renderApp();
+        });
+
+        function generateFiscalOptions() {
+            const select = document.getElementById('fiscalYearSelect');
+            select.innerHTML = '';
+            let currentYear = getFiscalYearKey(new Date());
+            
+            for (let y = currentYear - 2; y <= currentYear + 2; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = `ปีงบประมาณ ${y + 543} (เม.ย. ${y-1} - ก.ย. ${y})`;
+                if (y === currentFiscalYear) opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+
+        function changeFiscalYear() {
+            currentFiscalYear = parseInt(document.getElementById('fiscalYearSelect').value);
+            renderApp();
+        }
+
+        function initCalendar() {
+            var calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'th',
+                height: 420,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth'
+                },
+                events: getAllEvents(),
+                dateClick: function(info) {
+                    openModal(info.dateStr);
+                }
+            });
+            calendar.render();
+        }
+
+        function getAllEvents() {
+            let events = [];
+
+            let filteredLeaves = (db.leaves || []).filter(item => {
+                let itemYear = getFiscalYearKey(new Date(item.startDate));
+                return itemYear === currentFiscalYear;
+            });
+
+            filteredLeaves.forEach(item => {
+                let color = '#38bdf8';
+                if (item.type === 'sick') color = '#c084fc';
+                if (item.type === 'business') color = '#f472b6';
+
+                let endDateObj = new Date(item.endDate);
+                endDateObj.setDate(endDateObj.getDate() + 1);
+                let formattedEnd = endDateObj.toISOString().split('T')[0];
+
+                events.push({
+                    title: `${getEmoji(item.type)} (${item.totalDays} วัน) ${item.reason}`,
+                    start: item.startDate,
+                    end: formattedEnd,
+                    backgroundColor: color,
+                    borderColor: color,
+                    textColor: '#0f1020'
+                });
+            });
+
+            for (let dateStr in (db.notes || {})) {
+                if (db.notes[dateStr]) {
+                    let noteYear = getFiscalYearKey(new Date(dateStr));
+                    if (noteYear === currentFiscalYear) {
+                        events.push({
+                            title: `📝 ${db.notes[dateStr]}`,
+                            start: dateStr,
+                            allDay: true,
+                            backgroundColor: '#fbbf24',
+                            borderColor: '#fbbf24',
+                            textColor: '#0f1020'
+                        });
+                    }
+                }
+            }
+
+            return events;
+        }
+
+        function getTypeName(type) {
+            if (type === 'vacation') return 'ลาพักผ่อน';
+            if (type === 'sick') return 'ลาป่วย';
+            return 'ลากิจ';
+        }
+
+        function getEmoji(type) {
+            if (type === 'vacation') return '🏖️';
+            if (type === 'sick') return '🩺';
+            return '📌';
+        }
+
+        function calculateBusinessDays(startDate, endDate) {
+            let count = 0;
+            let curDate = new Date(startDate);
+            let lastDate = new Date(endDate);
+
+            while (curDate <= lastDate) {
+                let dayOfWeek = curDate.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    count++;
+                }
+                curDate.setDate(curDate.getDate() + 1);
+            }
+            return count;
+        }
+
+        function addLeave(e) {
+            e.preventDefault();
+            const type = document.getElementById('leaveType').value;
+            let reason = document.getElementById('leaveReason').value.trim();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (startDate > endDate) {
+                alert('วันเริ่มต้นต้องไม่มากกว่าวันสิ้นสุด');
+                return;
+            }
+
+            const totalDays = calculateBusinessDays(startDate, endDate);
+            if (!reason) reason = getTypeName(type);
+
+            const newLeave = {
+                id: Date.now(),
+                type,
+                reason,
+                startDate,
+                endDate,
+                totalDays
+            };
+
+            if (!db.leaves) db.leaves = [];
+            db.leaves.push(newLeave);
+            saveDB();
+            renderApp();
+            document.getElementById('leaveForm').reset();
+        }
+
+        function deleteLeave(id) {
+            db.leaves = db.leaves.filter(item => item.id !== id);
+            saveDB();
+            renderApp();
+        }
+
+        function openModal(dateStr) {
+            selectedDateForNote = dateStr;
+            document.getElementById('modalDateTitle').textContent = `📝 โน้ตวันที่ ${dateStr}`;
+            document.getElementById('noteText').value = (db.notes && db.notes[dateStr]) || '';
+            document.getElementById('noteModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('noteModal').style.display = 'none';
+        }
+
+        function saveNote() {
+            const val = document.getElementById('noteText').value.trim();
+            if (!db.notes) db.notes = {};
+            if (val) {
+                db.notes[selectedDateForNote] = val;
+            } else {
+                delete db.notes[selectedDateForNote];
+            }
+            saveDB();
+            closeModal();
+            renderApp();
+        }
+
+        function deleteNote(dateStr) {
+            delete db.notes[dateStr];
+            saveDB();
+            renderApp();
+        }
+
+        function saveDB() {
+            localStorage.setItem('fiscal_leave_db', JSON.stringify(db));
+        }
+
+        function renderApp() {
+            let usedDays = { vacation: 0, sick: 0, business: 0 };
+            const listEl = document.getElementById('leaveList');
+            listEl.innerHTML = '';
+
+            let currentLeaves = (db.leaves || []).filter(item => getFiscalYearKey(new Date(item.startDate)) === currentFiscalYear);
+
+            if (currentLeaves.length === 0 && (!db.notes || Object.keys(db.notes).length === 0)) {
+                listEl.innerHTML = `<p style="text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px;">ยังไม่มีประวัติการลาหรือโน้ตในปีงบประมาณนี้</p>`;
+            }
+
+            let sortedLeaves = [...currentLeaves].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+            sortedLeaves.forEach(item => {
+                usedDays[item.type] += item.totalDays;
+
+                let badgeClass = 'badge-vacation';
+                let typeText = getTypeName(item.type);
+                if (item.type === 'sick') badgeClass = 'badge-sick';
+                else if (item.type === 'business') badgeClass = 'badge-business';
+
+                const div = document.createElement('div');
+                div.className = 'leave-item';
+                div.innerHTML = `
+                    <div class="leave-info">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span class="badge ${badgeClass}">${getEmoji(item.type)} ${typeText}</span>
+                            <h4 style="display:inline;">${item.reason}</h4>
+                        </div>
+                        <p>📅 ${item.startDate} ถึง ${item.endDate} (รวม <strong>${item.totalDays}</strong> วันทำการ)</p>
+                    </div>
+                    <button class="delete-btn" onclick="deleteLeave(${item.id})">ลบ</button>
+                `;
+                listEl.appendChild(div);
+            });
+
+            for (let dateStr in (db.notes || {})) {
+                if (getFiscalYearKey(new Date(dateStr)) === currentFiscalYear) {
+                    const div = document.createElement('div');
+                    div.className = 'leave-item';
+                    div.innerHTML = `
+                        <div class="leave-info">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <span class="badge badge-note">📝 โน้ตรายวัน</span>
+                                <h4 style="display:inline;">${db.notes[dateStr]}</h4>
+                            </div>
+                            <p>📅 วันที่: ${dateStr}</p>
+                        </div>
+                        <button class="delete-btn" onclick="deleteNote('${dateStr}')">ลบ</button>
+                    `;
+                    listEl.appendChild(div);
+                }
+            }
+
+            // อัปเดตแสดงผลกล่องสรุป
+            document.getElementById('vacationRemaining').textContent = `${vacationQuota - usedDays.vacation} / ${vacationQuota}`;
+            document.getElementById('vacationUsed').textContent = `ใช้ไป ${usedDays.vacation} วัน`;
+
+            document.getElementById('sickTotal').textContent = `${usedDays.sick} วัน`;
+            document.getElementById('businessTotal').textContent = `${usedDays.business} วัน`;
+
+            if (calendar) {
+                calendar.removeAllEvents();
+                calendar.addEventSource(getAllEvents());
+            }
+        }
+    </script>
+</body>
+</html>
